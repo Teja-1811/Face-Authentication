@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3D Face Registration</title>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>
+</head>
+<body>
+  <h2>3D Face Registration</h2>
+
+  <video id="video" autoplay playsinline></video>
+  <canvas id="output" width="640" height="480"></canvas>
+  <div id="faceContainer"></div>
+  <button id="registerButton" disabled>Register</button>
+
+  <script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('output');
+    const context = canvas.getContext('2d');
+    const registerButton = document.getElementById('registerButton');
+
+    // Initialize Three.js for 3D rendering
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, 640 / 480, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer();
+    renderer.setSize(640, 480);
+    document.getElementById('faceContainer').appendChild(renderer.domElement);
+
+    camera.position.z = 2;
+
+    // Validate WebGL Support
+    if (!renderer.capabilities.isWebGL2) {
+      console.error('WebGL2 is not supported on this browser. Please update or try another browser.');
+    }
+
+    const faceMesh = new FaceMesh({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}` });
+    faceMesh.setOptions({
+      maxNumFaces: 1,
+      refineLandmarks: true,
+      minDetectionConfidence: 0.5,
+      minTrackingConfidence: 0.5,
+    });
+
+    async function startCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        video.srcObject = stream;
+      } catch (error) {
+        console.error('Camera access denied:', error);
+      }
+    }
+
+    startCamera();
+
+    faceMesh.onResults((results) => {
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      if (results.multiFaceLandmarks && results.multiFaceLandmarks.length) {
+        registerButton.disabled = false;
+        results.multiFaceLandmarks.forEach(landmarks => {
+          drawLandmarks(landmarks);
+          create3DFace(landmarks);
+        });
+      } else {
+        console.warn('No face detected. Ensure proper lighting and positioning.');
+      }
+    });
+
+    function drawLandmarks(landmarks) {
+      context.strokeStyle = '#00FF00';
+      context.lineWidth = 2;
+      landmarks.forEach((point) => {
+        const x = point.x * canvas.width;
+        const y = point.y * canvas.height;
+        context.beginPath();
+        context.arc(x, y, 2, 0, 2 * Math.PI);
+        context.fill();
+      });
+    }
+
+    function create3DFace(landmarks) {
+      try {
+        const geometry = new THREE.BufferGeometry();
+        const vertices = landmarks.map(l => new THREE.Vector3(l.x - 0.5, -(l.y - 0.5), -l.z));
+        geometry.setFromPoints(vertices);
+
+        const material = new THREE.PointsMaterial({ color: 0x00ff00, size: 0.01 });
+        const mesh = new THREE.Points(geometry, material);
+
+        scene.clear();
+        scene.add(mesh);
+        renderer.render(scene, camera);
+      } catch (error) {
+        console.error('3D face creation error:', error);
+      }
+    }
+
+    async function detectFace() {
+      try {
+        await faceMesh.send({ image: video });
+      } catch (error) {
+        console.error('Face detection error:', error);
+      }
+      requestAnimationFrame(detectFace);
+    }
+
+    detectFace();
+
+    registerButton.addEventListener('click', () => {
+      alert('Face registered successfully!');
+    });
+  </script>
+</body>
+</html>

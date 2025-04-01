@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <div class="container">
+        <a class="navbar-brand" href="#">Face Authentication</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="/dashboard/">Dashboard</a>
+                </li>
+                <li class="nav-item">
+                    <button class="btn btn-danger" id="logoutButton">Logout</button>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container mt-4 p-4 border rounded">
+    <h2 class="text-center">Welcome, <span>{{name}}</span>!</h2>
+    <p class="text-center">You have successfully logged in.</p>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        document.getElementById("logoutButton").addEventListener("click", function() {
+            fetch("/logout/", { method: "POST", headers: { "X-CSRFToken": "{{ csrf_token }}" } })
+                .then(response => {
+                    if (response.ok) {
+                        window.location.href = "/";
+                    } else {
+                        alert("Logout failed. Please try again.");
+                    }
+                })
+                .catch(error => console.error("Logout error:", error));
+        });
+    });
+</script>
+{% endblock %}

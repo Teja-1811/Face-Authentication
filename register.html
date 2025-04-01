@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+{% block title %}Register{% endblock %}
+
+{% block content %}
+<div class="container mt-4 p-4 border rounded">
+    <h2 class="text-center">Register</h2>
+    
+    <div id="registrationSection">
+        <form method="POST" enctype="multipart/form-data" id="registrationForm">
+            {% csrf_token %}
+            
+            <label for="name">First Name:</label>
+            <input type="text" name="fname" class="form-control" required>
+
+            <label for="name">Last Name:</label>
+            <input type="text" name="lname" class="form-control" required>
+            
+            <label for="email">Email:</label>
+            <input type="email" name="email" class="form-control" required>
+            
+            <label for="password">Password:</label>
+            <input type="password" name="password" class="form-control" required>
+            
+            <input type="hidden" name="face_image" id="face_image">
+            
+            <div class="text-center mt-3" id="captureSection">
+                <h4>Live Face Capture</h4>
+                <video id="video" class="border rounded" autoplay></video>
+                <canvas id="canvas" style="display:none;"></canvas>
+                <img id="capturedImage" class="mt-2" style="display:none; max-width: 100%;"/>
+                <p id="livenessMessage" class="text-danger mt-2"></p>
+                <button type="button" id="capture" class="btn btn-primary mt-2" disabled>Capture Face</button>
+            </div>
+            
+            <button type="submit" class="btn btn-success mt-3 w-100" id="registerButton" disabled>Register</button>
+        </form>
+    </div>
+</div>
+
+<!-- Load Face-API.js & TensorFlow.js -->
+<script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+
+<script>
+    async function loadModels() {
+        await faceapi.nets.tinyFaceDetector.loadFromUri('/static/models');
+        await faceapi.nets.faceLandmark68Net.loadFromUri('/static/models');
+        console.log("Face-API.js Models Loaded!");
+    }
+    
+    document.addEventListener("DOMContentLoaded", async function () {
+        await loadModels();
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const capturedImage = document.getElementById('capturedImage');
+        const faceImageInput = document.getElementById('face_image');
+        const registerButton = document.getElementById('registerButton');
+        const livenessMessage = document.getElementById('livenessMessage');
+        const captureButton = document.getElementById('capture');
+        let livenessVerified = false;
+        let capturedImageData = null;
+
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => video.srcObject = stream)
+            .catch(err => console.error('Camera access denied:', err));
+
+        async function detectLiveness() {
+            if (livenessVerified) return;
+            const detections = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks();
+            if (!detections) {
+                livenessMessage.textContent = "No face detected!";
+                return;
+            }
+
+            const leftEye = detections.landmarks.getLeftEye();
+            const rightEye = detections.landmarks.getRightEye();
+            const leftEAR = calculateEAR(leftEye);
+            const rightEAR = calculateEAR(rightEye);
+
+            const blinkThreshold = 0.25;
+            if (leftEAR < blinkThreshold && rightEAR < blinkThreshold) {
+                console.log("Blink detected! Liveness verified.");
+                verifyLiveness();
+                return;
+            }
+
+            const prevDetection = detections;
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            const newDetection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions());
+            
+            if (prevDetection && newDetection) {
+                const diffX = Math.abs(prevDetection.box.x - newDetection.box.x);
+                const diffY = Math.abs(prevDetection.box.y - newDetection.box.y);
+                if (diffX > 10 || diffY > 10) {
+                    console.log("Head movement detected! Liveness verified.");
+                    verifyLiveness();
+                }
+            }
+        }
+
+        function calculateEAR(eye) {
+            const dist = (p1, p2) => Math.sqrt((p1._x - p2._x) ** 2 + (p1._y - p2._y) ** 2);
+            const vertical1 = dist(eye[1], eye[5]);
+            const vertical2 = dist(eye[2], eye[4]);
+            const horizontal = dist(eye[0], eye[3]);
+            return (vertical1 + vertical2) / (2.0 * horizontal);
+        }
+
+        function verifyLiveness() {
+            livenessVerified = true;
+            livenessMessage.textContent = "Liveness Verified! Ready to Capture.";
+            livenessMessage.classList.remove("text-danger");
+            livenessMessage.classList.add("text-success");
+            captureButton.disabled = false;
+        }
+
+        setInterval(detectLiveness, 1000);
+
+        captureButton.addEventListener('click', () => {
+            if (!livenessVerified) return;
+            
+            const context = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            capturedImageData = canvas.toDataURL('image/png');
+            faceImageInput.value = capturedImageData;
+            capturedImage.src = capturedImageData;
+            capturedImage.style.display = 'block';
+            video.srcObject.getTracks().forEach(track => track.stop());
+            video.style.display = 'none';
+            
+            livenessMessage.textContent = "Face Captured! No Spoof Detected.";
+            registerButton.disabled = false;
+        });
+
+        document.getElementById('registrationForm').addEventListener('submit', function(event) {
+            if (!capturedImageData) {
+                event.preventDefault();
+                alert("Please capture your face before registering.");
+            }
+        });
+    });
+</script>
+{% endblock %}
