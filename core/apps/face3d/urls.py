@@ -28,6 +28,7 @@ urlpatterns = [
     path('reset/done/', auth_views.PasswordResetCompleteView.as_view(template_name='password_reset_complete.html'), name='password_reset_complete'),
     
     path('reset-face/', views.reset_face, name='reset_face'),
+    path('verify_otp/', views.verify_otp, name='verify_otp'),
 ] 
 urlpatterns += [path('favicon.ico', favicon_view)]
 handler404 = "apps.face3d.views.custom_404_view" 
