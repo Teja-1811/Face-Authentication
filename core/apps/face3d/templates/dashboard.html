@@ -14,7 +14,10 @@
                     <a class="nav-link" href="/dashboard/">Dashboard</a>
                 </li>
                 <li class="nav-item">
-                    <button class="btn btn-danger" id="logoutButton">Logout</button>
+                    <a href="{% url 'reset_face' %}" class="btn btn-warning my-2 me-2">Reset Face</a>
+                </li>
+                <li class="nav-item">
+                    <button class="btn btn-danger my-2" id="logoutButton">Logout</button>
                 </li>
             </ul>
         </div>
@@ -22,23 +25,30 @@
 </nav>
 
 <div class="container mt-4 p-4 border rounded">
-    <h2 class="text-center">Welcome, <span>{{name}}</span>!</h2>
+    <h2 class="text-center">Welcome, <span>{{ name }}</span>!</h2>
     <p class="text-center">You have successfully logged in.</p>
 </div>
+<!-- Three.js & Loaders -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three/examples/js/loaders/OBJLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three/examples/js/controls/OrbitControls.js"></script>
 
 <script>
-    document.addEventListener("DOMContentLoaded", function() {
-        document.getElementById("logoutButton").addEventListener("click", function() {
-            fetch("/logout/", { method: "POST", headers: { "X-CSRFToken": "{{ csrf_token }}" } })
-                .then(response => {
-                    if (response.ok) {
-                        window.location.href = "/";
-                    } else {
-                        alert("Logout failed. Please try again.");
-                    }
-                })
-                .catch(error => console.error("Logout error:", error));
-        });
+document.addEventListener("DOMContentLoaded", function() {
+    
+    // Logout Functionality
+    document.getElementById("logoutButton").addEventListener("click", function() {
+        fetch("/logout/", { method: "POST", headers: { "X-CSRFToken": "{{ csrf_token }}" } })
+            .then(response => {
+                if (response.ok) {
+                    window.location.href = "/";
+                } else {
+                    alert("Logout failed. Please try again.");
+                }
+            })
+            .catch(error => console.error("Logout error:", error));
     });
+});
 </script>
+
 {% endblock %}

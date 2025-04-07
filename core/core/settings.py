@@ -25,9 +25,16 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-e_&7@+4=3m8!p%(@36%5y(qq6h@7$6!h8=&@w&ikez_d0o3(-e'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = ['localhost',
+    '127.0.0.1',
+    '85e5-2406-7400-35-8a2c-50d5-ebc2-25a0-fdce.ngrok-free.app']
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://85e5-2406-7400-35-8a2c-50d5-ebc2-25a0-fdce.ngrok-free.app"
+]
+
 
 SESSION_ENGINE = "django.contrib.sessions.backends.db"
 SESSION_COOKIE_AGE = 3600  # 1 hour
@@ -43,7 +50,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'whitenoise.runserver_nostatic',
-    'apps.face3d',
+    'apps.face3d.apps.Face3DConfig',
 ]
 
 MIDDLEWARE = [
@@ -65,7 +72,7 @@ ROOT_URLCONF = 'core.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': ['templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -140,13 +147,12 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST = "smtp.gmail.com"  # Use your email provider's SMTP host
+EMAIL_HOST = "smtp.gmail.com"
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = "bhanuteja18112001@gmail.com"
-EMAIL_HOST_PASSWORD = "********************"
-DEFAULT_FROM_EMAIL = ""
-
+EMAIL_HOST_PASSWORD = "jzzpnessiwfbfnvh"
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field

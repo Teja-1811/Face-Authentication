@@ -25,7 +25,7 @@
 
             <div class="text-center mt-3" id="captureSection">
                 <h4>Live Face Capture</h4>
-                <video id="video" class="border rounded" autoplay></video>
+                <video id="video" class="border rounded w-100" autoplay style="max-width: 500px; height: auto;"></video>
                 <canvas id="canvas" style="display:none;"></canvas>
                 <img id="capturedImage" class="mt-2" style="display:none; max-width: 100%;" />
                 <p id="livenessMessage" class="text-danger mt-2"></p>
@@ -68,7 +68,7 @@
             if (livenessVerified) return;
             const detections = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks();
             if (!detections) {
-                livenessMessage.textContent = "No face detected!";
+                livenessMessage.textContent = "Please Wait, Your Face is validating !";
                 return;
             }
 
