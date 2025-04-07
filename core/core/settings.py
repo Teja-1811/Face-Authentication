@@ -29,10 +29,10 @@ DEBUG = False
 
 ALLOWED_HOSTS = ['localhost',
     '127.0.0.1',
-    '85e5-2406-7400-35-8a2c-50d5-ebc2-25a0-fdce.ngrok-free.app']
+    'a2de-2406-7400-35-8a2c-2469-a8a9-22c7-9b27.ngrok-free.app']
 
 CSRF_TRUSTED_ORIGINS = [
-    "https://85e5-2406-7400-35-8a2c-50d5-ebc2-25a0-fdce.ngrok-free.app"
+    "https://a2de-2406-7400-35-8a2c-2469-a8a9-22c7-9b27.ngrok-free.app"
 ]
 
 
@@ -150,7 +150,7 @@ EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = "smtp.gmail.com"
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = "bhanuteja18112001@gmail.com"
+EMAIL_HOST_USER = ""
 EMAIL_HOST_PASSWORD = ""
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 

@@ -7,6 +7,7 @@ import face_recognition
 from deepface import DeepFace
 import mediapipe as mp
 import open3d as o3d
+import random
 import tempfile
 from django.shortcuts import render, redirect
 from django.http import HttpResponseNotFound
@@ -21,12 +22,15 @@ from django.conf import settings
 from django.core.mail import send_mail
 from django.contrib.auth.views import PasswordResetConfirmView
 from django.urls import reverse_lazy
+from django.urls import reverse
 from django.utils.timezone import now
 
 from .models import CustomUser
-from .otp import generate_otp
 
 mp_face_mesh = mp.solutions.face_mesh
+
+def generate_otp():
+    return str(random.randint(100000, 999999))
 
 def get_client_ip(request):
     """Extract IP address from request headers."""
@@ -227,8 +231,11 @@ def password_login(request):
             
             user = authenticate(username=email, password=password)
             if user is not None:
+                user = CustomUser.objects.get(email = email)
                 otp = generate_otp()
+                print(otp)
                 user.otp = otp
+                user.otp_created_at = now()
                 user.save()
 
                 send_mail(
@@ -238,12 +245,8 @@ def password_login(request):
                     recipient_list=[user.email],
                     fail_silently=False,
                 )
-
-                return JsonResponse({
-                    "success": True,
-                    "message": "OTP sent to your email. Please verify.",
-                    "require_otp": True
-                })
+                request.session['email'] = email
+                return JsonResponse({'success': True})
             else:
                 try:
                     user = CustomUser.objects.get(email=email)
@@ -285,8 +288,9 @@ def logout_view(request):
 def dashboard_view(request):
     user = request.user
     model_path = user.face_3d_model.url if user.face_3d_model else None
+    name = user.first_name +" "+user.last_name
     
-    return render(request, "dashboard.html", {"name": user.first_name, "model_path": model_path})
+    return render(request, "dashboard.html", {"name": name, "model_path": model_path})
 
 @csrf_exempt
 def verify_spoof(request):
@@ -383,6 +387,14 @@ def reset_face(request):
             user.face_embedding = face_embedding
             user.face_3d_model = f"3d_faces/{file_name}"
             user.save()
+            
+            send_mail(
+                subject="Your Face Data Updated",
+                message=f"Hii {user.first_name} {user.last_name}!\n\nYour Face Login Data is updated",
+                from_email=None,
+                recipient_list=[user.email],
+                fail_silently=False,
+            )
 
             return JsonResponse({"success": True, "message": "Face data reset successful!", "redirect_url": "/dashboard/"})
 
@@ -418,26 +430,110 @@ def verify_otp(request):
     if request.method == "POST":
         try:
             data = json.loads(request.body)
-            email = data.get("email")
+            email = request.session.get('email')
+            #print(email)
             otp = data.get("otp")
+
+            if not email or not otp:
+                return JsonResponse({"error": "Email and OTP are required."}, status=400)
 
             try:
                 user = CustomUser.objects.get(email=email)
-                if user.otp == otp:
-                    login(request, user)
-                    user.login_attempts = 0
-                    user.otp = ""  # Clear OTP after successful login
+
+                # Check if OTP is valid and not expired (2 minutes expiry)
+                otp_lifetime = (now() - user.otp_created_at).total_seconds()
+                if user.otp == otp and otp_lifetime <= 120:
+                    user.otp = "000000"  # Clear OTP after success
+                    user.otp_created_at = now()
                     user.save()
+                    #print("OTP Verified")
+                    login(request, user)
+                    redirect_url = reverse('dashboard')
                     return JsonResponse({
                         "success": True,
-                        "message": "Login successful via OTP!",
-                        "username": f"{user.first_name} {user.last_name}"
+                        "message": "OTP verified successfully!",
+                        "redirect_url": "/dashboard/"
                     })
                 else:
-                    return JsonResponse({"error": "Invalid OTP."}, status=400)
+                    return JsonResponse({
+                        "error": "Invalid or expired OTP."
+                    }, status=400)
 
             except CustomUser.DoesNotExist:
-                return JsonResponse({"error": "User does not exist."}, status=400)
+                return JsonResponse({"error": "User not found."}, status=404)
 
         except json.JSONDecodeError:
-            return JsonResponse({"error": "Invalid request format."}, status=400)
+            return JsonResponse({"error": "Invalid JSON format."}, status=400)
+
+    return render(request, "otp_validation.html")
+
+@csrf_exempt
+def send_otp(request):
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            email = data.get("email") or request.user.email
+            print(f"Sending OTP to: {email}")
+            
+            if not email:
+                return JsonResponse({"success": False, "message": "No email found in session."}, status=400)
+
+            try:
+                user = CustomUser.objects.get(email = email)
+                
+                if user is not None:
+                    otp = generate_otp()
+                    user.otp = otp
+                    user.otp_created_at = now()
+                    user.save()
+                    send_mail(
+                    subject="🔐 Your OTP Code",
+                    message=f"Hi {user.first_name},\n\nYour OTP code is: {otp}\nIt expires in 5 minutes.\n\nBest,\nSecurity Team",
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[user.email],
+                    fail_silently=False,
+                )
+
+                return JsonResponse({
+                    "success": True,
+                    "message": "OTP sent to your email. Please verify.",
+                    "require_otp": True
+                })
+            except CustomUser.DoesNotExist:
+                return JsonResponse({"error": "User not found."}, status=404)
+
+        except json.JSONDecodeError:
+            return JsonResponse({"error": "Invalid JSON format."}, status=400)
+
+    return JsonResponse({"error": "Only POST requests allowed."}, status=405)
+
+def validate_otp(request):
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            email = data.get("email") or request.user.email
+            otp = data.get("otp")
+
+            if not email or not otp:
+                return JsonResponse({"valid": False, "error": "Email and OTP are required."}, status=400)
+
+            try:
+                user = CustomUser.objects.get(email=email)
+
+                # Check if OTP is valid and within 2-minute window
+                otp_lifetime = (now() - user.otp_created_at).total_seconds()
+                if user.otp == otp and otp_lifetime <= 120:
+                    user.otp = "000000"  # Invalidate OTP after success
+                    user.otp_created_at = now()
+                    user.save()
+                    return JsonResponse({"valid": True})
+                else:
+                    return JsonResponse({"valid": False, "error": "Invalid or expired OTP."}, status=400)
+
+            except CustomUser.DoesNotExist:
+                return JsonResponse({"valid": False, "error": "User not found."}, status=404)
+
+        except json.JSONDecodeError:
+            return JsonResponse({"valid": False, "error": "Invalid JSON format."}, status=400)
+
+    return JsonResponse({"valid": False, "error": "Only POST method allowed."}, status=405)

@@ -8,6 +8,7 @@ class CustomUser(AbstractUser):
     face_3d_model = models.FileField(upload_to="3d_faces/", null=True, blank=True)  # Store 3D model file
     login_attempts = models.IntegerField(default=0)
     otp = models.CharField(max_length=6, default='000000')
+    otp_created_at = models.DateTimeField(null=True, blank=True)
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["username"]

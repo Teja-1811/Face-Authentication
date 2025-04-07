@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% block title %}OTP Verification{% endblock %}
+
+{% block content %}
+<div class="container mt-5 p-4 border rounded shadow-sm" style="max-width: 500px;">
+    <h3 class="text-center mb-4">🔐 OTP Verification</h3>
+
+    <div id="otpMessage" class="alert d-none" role="alert"></div>
+
+    <form id="otpForm">
+        {% csrf_token %}
+        <input type="hidden" name="email" value="{{ email }}">
+        <div class="form-group mb-3">
+            <label for="otp">Enter the OTP sent to your email</label>
+            <input type="text" class="form-control" name="otp" placeholder="6-digit OTP" required>
+        </div>
+        <button type="submit" class="btn btn-primary w-100">Verify OTP</button>
+        <button type="button" id="resendBtn" class="btn btn-link w-100 mt-2">Resend OTP</button>
+    </form>
+</div>
+
+<script>
+    const otpForm = document.getElementById("otpForm");
+    const otpMessage = document.getElementById("otpMessage");
+    const resendBtn = document.getElementById("resendBtn");
+    const email = document.querySelector("input[name='email']").value || localStorage.getItem("otpEmail");
+
+    otpForm.addEventListener("submit", function (e) {
+        e.preventDefault();
+        const otp = document.querySelector("input[name='otp']").value;
+
+        fetch("/verify_otp/", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]").value
+            },
+            body: JSON.stringify({ email, otp })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                otpMessage.className = "alert alert-success";
+                otpMessage.textContent = data.message;
+                otpMessage.classList.remove("d-none");
+                setTimeout(() => {
+                    window.location.href = data.redirect_url;
+                }, 1500);
+            } else {
+                otpMessage.className = "alert alert-danger";
+                otpMessage.textContent = data.error;
+                otpMessage.classList.remove("d-none");
+            }
+        });
+    });
+
+    resendBtn.addEventListener("click", function () {
+        fetch("/resend_otp/", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]").value
+            },
+            body: JSON.stringify({ email })
+        })
+        .then(res => res.json())
+        .then(data => {
+            otpMessage.className = data.success ? "alert alert-info" : "alert alert-danger";
+            otpMessage.textContent = data.message || data.error;
+            otpMessage.classList.remove("d-none");
+        });
+    });
+</script>
+{% endblock %}

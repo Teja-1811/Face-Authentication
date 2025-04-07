@@ -15,6 +15,16 @@
         <button type="button" id="capture" class="btn btn-primary mt-2" disabled>Capture Face</button>
     </div>
 
+    <!-- Send OTP -->
+    <button type="button" class="btn btn-outline-info mt-3 w-100" id="sendOtpButton">Send OTP</button>
+
+    <!-- OTP Input -->
+    <div id="otpSection" style="display:none;" class="mt-2">
+        <input type="text" id="otpInput" class="form-control" placeholder="Enter OTP">
+        <button type="button" class="btn btn-outline-info mt-3 w-100" id="validateButton">Validate OTP</button>
+        <p id="otpStatus" class="mt-2 text-center text-danger"></p>
+    </div>
+
     <button type="button" class="btn btn-outline-success mt-3 w-100" id="verifyButton" disabled>Reset Face</button>
     <div id="loading" style="display:none;" class="text-center mt-3">
         <div class="spinner-border text-primary" role="status">
@@ -44,9 +54,15 @@
         const captureButton = document.getElementById('capture');
         const loading = document.getElementById('loading');
         const cameraError = document.getElementById('cameraError');
-        
+        const sendOtpButton = document.getElementById('sendOtpButton');
+        const otpSection = document.getElementById('otpSection');
+        const otpInput = document.getElementById('otpInput');
+        const validateButton = document.getElementById('validateButton');
+        const otpStatus = document.getElementById('otpStatus');
+
         let livenessVerified = false;
         let spoofVerified = false;
+        let otpVerified = false;
         let capturedImageData = null;
 
         navigator.mediaDevices.getUserMedia({ video: true })
@@ -161,6 +177,63 @@
                 verifyButton.disabled = true;
             }
         });
+
+        // OTP Handling
+        sendOtpButton.addEventListener('click', () => {
+            fetch('/send_otp/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({ email: '{{ request.user.email }}' })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    sendOtpButton.style.display = 'none';
+                    otpSection.style.display = 'block';
+                    alert("OTP sent!");
+                } else {
+                    alert("Failed to send OTP.");
+                }
+            });
+        });
+
+        validateButton.addEventListener('click', () => {
+            const otp = otpInput.value.trim();
+            if (!otp) return otpStatus.textContent = "⚠️ Please enter OTP.";
+
+            fetch('/validate_otp/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({ 
+                    otp: otp,
+                    email: '{{ request.user.email }}'
+                 })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.valid) {
+                    otpVerified = true;
+                    otpStatus.className = 'text-success';
+                    otpStatus.textContent = "OTP Verified!";
+                    enableVerifyButton();
+                } else {
+                    otpStatus.className = 'text-danger';
+                    otpStatus.textContent = "Invalid OTP!";
+                }
+            });
+        });
+
+        function enableVerifyButton() {
+            if (otpVerified && spoofVerified && livenessVerified) {
+                verifyButton.disabled = false;
+            }
+        }
 
         verifyButton.addEventListener('click', async () => {
             if (!spoofVerified || !livenessVerified) {

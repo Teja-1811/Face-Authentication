@@ -7,6 +7,7 @@ def generate_otp(email):
     
     for i in range(6):
         otp += digits[math.floor(random.random()*10)]
+        #print(otp)
     
     return otp
         
