@@ -4,7 +4,12 @@
 {% block content %}
 <div class="container mt-4 p-4 border rounded">
     <h2 class="text-center">Face Authentication</h2>
-    
+    <div id="loading" style="display:none;" class="text-center mt-3">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p>Your face is being verified. Please wait...</p>
+    </div>
     <div class="mb-3">
         <label for="email" class="form-label">Email</label>
         <input type="email" class="form-control" id="email" placeholder="Enter your email" required>
@@ -22,12 +27,6 @@
     <button type="button" class="btn btn-outline-success mt-3 w-100" id="verifyButton" disabled>Login</button>
     <a type="button" class="btn btn-outline-info mt-3 w-100" href="{% url 'p_login' %}">Use Password</a>
     
-    <div id="loading" style="display:none;" class="text-center mt-3">
-        <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">Loading...</span>
-        </div>
-        <p>Your face is being verified. Please wait...</p>
-    </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.min.js"></script>

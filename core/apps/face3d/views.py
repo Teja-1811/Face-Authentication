@@ -148,7 +148,6 @@ def register(request):
             if not face_3d_obj:
                 return JsonResponse({"error": "Could not generate 3D face."}, status=400)
             
-            #print(face_3d_obj)
             # Save 3D model to a file
             file_name = f"{email}.obj"
             file_path = os.path.join(settings.MEDIA_ROOT, "3d_faces", file_name)
@@ -415,7 +414,7 @@ class CustomPasswordResetConfirmView(PasswordResetConfirmView):
         if self.user and self.user.email:
             send_mail(
                 subject='Your Password Has Been Changed',
-                message='Hi, your password has been successfully changed. If this wasn’t you, please reset your password or contact support immediately.',
+                message=f'Hi {self.user.first_name}, your password has been successfully changed.\nIf this wasn’t you, please reset your password or contact support immediately.',
                 from_email=settings.DEFAULT_FROM_EMAIL,
                 recipient_list=[self.user.email],
                 fail_silently=False,
@@ -424,7 +423,6 @@ class CustomPasswordResetConfirmView(PasswordResetConfirmView):
         
         return response
     
-
 @csrf_exempt
 def verify_otp(request):
     if request.method == "POST":
@@ -488,7 +486,7 @@ def send_otp(request):
                     user.save()
                     send_mail(
                     subject="🔐 Your OTP Code",
-                    message=f"Hi {user.first_name},\n\nYour OTP code is: {otp}\nIt expires in 2 minutes.\n\nBest,\nSecurity Team",
+                    message=f"Hi {user.first_name},\n\nYour OTP code is: {otp}\nIt expires in 1 minutes.\n\nBest,\nSecurity Team",
                     from_email=settings.DEFAULT_FROM_EMAIL,
                     recipient_list=[user.email],
                     fail_silently=False,

@@ -4,33 +4,42 @@
 {% block content %}
 <div class="container mt-4 p-4 border rounded">
     <h2 class="text-center">Reset Face</h2>
-    
-    <div id="captureSection" class="text-center">
-        <h4>Live Face Capture</h4>
-        <video id="video" class="border rounded w-100" style="max-width: 500px; height: auto;" autoplay></video>
-        <canvas id="canvas" style="display:none;"></canvas>
-        <img id="capturedImage" class="mt-2" style="display:none; max-width: 100%;"/>
-        <p id="livenessMessage" class="text-danger mt-2"></p>
-        <p id="cameraError" class="text-danger mt-2" style="display: none;">Failed to access camera. Please check permissions.</p>
-        <button type="button" id="capture" class="btn btn-primary mt-2" disabled>Capture Face</button>
-    </div>
 
-    <!-- Send OTP -->
-    <button type="button" class="btn btn-outline-info mt-3 w-100" id="sendOtpButton">Send OTP</button>
-
-    <!-- OTP Input -->
-    <div id="otpSection" style="display:none;" class="mt-2">
-        <input type="text" id="otpInput" class="form-control" placeholder="Enter OTP">
-        <button type="button" class="btn btn-outline-info mt-3 w-100" id="validateButton">Validate OTP</button>
-        <p id="otpStatus" class="mt-2 text-center text-danger"></p>
-    </div>
-
-    <button type="button" class="btn btn-outline-success mt-3 w-100" id="verifyButton" disabled>Reset Face</button>
     <div id="loading" style="display:none;" class="text-center mt-3">
         <div class="spinner-border text-primary" role="status">
             <span class="visually-hidden">Loading...</span>
         </div>
         <p>Your face is being verified. Please wait...</p>
+    </div>
+    
+    <div id="content">
+        <div id="captureSection" class="text-center">
+            <h4>Live Face Capture</h4>
+            <video id="video" class="border rounded w-100" style="max-width: 500px; height: auto;" autoplay></video>
+            <canvas id="canvas" style="display:none;"></canvas>
+            <img id="capturedImage" class="mt-2" style="display:none; max-width: 100%;"/>
+            <p id="livenessMessage" class="text-danger mt-2"></p>
+            <p id="cameraError" class="text-danger mt-2" style="display: none;">Failed to access camera. Please check permissions.</p>
+            <button type="button" id="capture" class="btn btn-primary mt-2" disabled>Capture Face</button>
+        </div>
+    
+        <!-- Send OTP -->
+        <button type="button" class="btn btn-outline-info mt-3 w-100" id="sendOtpButton">Send OTP</button>
+    
+        <!-- OTP Input -->
+        <div id="otpSection" style="display:none;" class="mt-2">
+            <p id="timer" class="text-center text-muted mt-1" style="font-weight: 600;"></p>
+            <div id="otpInputs" class="d-flex justify-content-center gap-2">
+                {% for i in "123456" %}
+                    <input type="text" maxlength="1" class="otp-box form-control text-center" style="width: 40px; font-size: 1.5rem;" id="otp{{ forloop.counter }}">
+                {% endfor %}
+            </div>
+            
+            <button type="button" class="btn btn-outline-info mt-3 w-100" id="validateButton">Validate OTP</button>
+            <p id="otpStatus" class="mt-2 text-center text-danger"></p>
+        </div>
+    
+        <button type="button" class="btn btn-outline-success mt-3 w-100" id="verifyButton" disabled>Reset Face</button>
     </div>
 </div>
 
@@ -59,6 +68,7 @@
         const otpInput = document.getElementById('otpInput');
         const validateButton = document.getElementById('validateButton');
         const otpStatus = document.getElementById('otpStatus');
+        const c_hide = document.getElementById('content');
 
         let livenessVerified = false;
         let spoofVerified = false;
@@ -178,6 +188,48 @@
             }
         });
 
+        const otpInputs = Array.from(document.querySelectorAll(".otp-box"));
+
+        // Auto move between boxes
+        otpInputs.forEach((input, index) => {
+            input.addEventListener("input", () => {
+                if (input.value.length === 1 && index < otpInputs.length - 1) {
+                    otpInputs[index + 1].focus();
+                }
+            });
+
+            input.addEventListener("keydown", (e) => {
+                if (e.key === "Backspace" && input.value === "" && index > 0) {
+                    otpInputs[index - 1].focus();
+                }
+            });
+        });
+
+        const timerDisplay = document.getElementById("timer");
+        let countdownInterval;
+
+        function startOtpCountdown(duration) {
+            let timeLeft = duration;
+            clearInterval(countdownInterval);
+
+            countdownInterval = setInterval(() => {
+                let minutes = Math.floor(timeLeft / 60);
+                let seconds = timeLeft % 60;
+                timerDisplay.textContent = `OTP expires in ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+                timeLeft--;
+
+                if (timeLeft < 0) {
+                    clearInterval(countdownInterval);
+                    timerDisplay.textContent = "⛔ OTP expired. Please resend.";
+                    otpVerified = false;
+                    validateButton.disabled = false;
+                    sendOtpButton.style.display = 'block';
+                    otpSection.style.display = 'none';
+                }
+            }, 1000);
+        }
+        validateButton.disabled = false;
+
         // OTP Handling
         sendOtpButton.addEventListener('click', () => {
             fetch('/send_otp/', {
@@ -193,7 +245,7 @@
                 if (data.success) {
                     sendOtpButton.style.display = 'none';
                     otpSection.style.display = 'block';
-                    alert("OTP sent!");
+                    startOtpCountdown(60);
                 } else {
                     alert("Failed to send OTP.");
                 }
@@ -201,8 +253,12 @@
         });
 
         validateButton.addEventListener('click', () => {
-            const otp = otpInput.value.trim();
-            if (!otp) return otpStatus.textContent = "⚠️ Please enter OTP.";
+            const otp = otpInputs.map(input => input.value).join('').trim();
+            if (otp.length !== 6) {
+                otpStatus.textContent = "⚠️ Please enter the full 6-digit OTP.";
+                return;
+            }
+
 
             fetch('/validate_otp/', {
                 method: 'POST',
@@ -221,10 +277,12 @@
                     otpVerified = true;
                     otpStatus.className = 'text-success';
                     otpStatus.textContent = "OTP Verified!";
+                    timerDisplay.style.display = "none";
                     enableVerifyButton();
                 } else {
                     otpStatus.className = 'text-danger';
                     otpStatus.textContent = "Invalid OTP!";
+                    timerDisplay.style.display = "none";
                 }
             });
         });
@@ -242,6 +300,7 @@
             }
 
             loading.style.display = 'block';
+            c_hide.style.display = 'none';
 
             fetch('/reset-face/', {
                 method: 'POST',
@@ -269,5 +328,6 @@
 
         setInterval(detectLiveness, 500);
     });
+
 </script>
 {% endblock %}

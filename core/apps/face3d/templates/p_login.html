@@ -4,6 +4,12 @@
 {% block content %}
     <div class="container mt-4 p-4 border rounded">
         <h2 class="text-center">Login</h2>
+        <div id="loading" style="display:none;" class="text-center mt-3">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p>Your Credentials is being verified. Please wait...</p>
+        </div>
         <p id="loginError" class="text-danger mt-2 text-center"></p>
         <form id="loginForm">
             {% csrf_token %}
@@ -23,6 +29,12 @@
             let email = document.querySelector("input[name='email']").value;
             let password = document.querySelector("input[name='password']").value;
             let csrfToken = document.querySelector("[name=csrfmiddlewaretoken]").value;
+            const loading = document.getElementById("loading");
+            const errorDisplay = document.getElementById("loginError");
+            
+            // Show loading spinner immediately
+            loading.style.display = "block";
+            errorDisplay.textContent = "";
 
             fetch("/p_login/", {
                 method: "POST",
