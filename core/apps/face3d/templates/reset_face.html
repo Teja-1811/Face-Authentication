@@ -159,7 +159,7 @@
                     'Content-Type': 'application/json',
                     'X-CSRFToken': '{{ csrf_token }}'
                 },
-                body: JSON.stringify({ image: capturedImageData })  // ✅ FIXED typo here
+                body: JSON.stringify({ image: capturedImageData })
             });
 
             const result = await response.json();

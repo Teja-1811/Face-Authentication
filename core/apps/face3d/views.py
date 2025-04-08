@@ -240,7 +240,7 @@ def password_login(request):
 
                 send_mail(
                     subject="🔐 Your OTP Code",
-                    message=f"Hi {user.first_name},\n\nYour OTP code is: {otp}\nIt expires in 5 minutes.\n\nBest,\nSecurity Team",
+                    message=f"Hi {user.first_name},\n\nYour OTP code is: {otp}\nIt expires in 2 minutes.\n\nBest,\nSecurity Team",
                     from_email=settings.DEFAULT_FROM_EMAIL,
                     recipient_list=[user.email],
                     fail_silently=False,
@@ -472,7 +472,7 @@ def send_otp(request):
     if request.method == "POST":
         try:
             data = json.loads(request.body)
-            email = data.get("email") or request.user.email
+            email = data.get("email") or request.session.get('email')
             print(f"Sending OTP to: {email}")
             
             if not email:
@@ -488,7 +488,7 @@ def send_otp(request):
                     user.save()
                     send_mail(
                     subject="🔐 Your OTP Code",
-                    message=f"Hi {user.first_name},\n\nYour OTP code is: {otp}\nIt expires in 5 minutes.\n\nBest,\nSecurity Team",
+                    message=f"Hi {user.first_name},\n\nYour OTP code is: {otp}\nIt expires in 2 minutes.\n\nBest,\nSecurity Team",
                     from_email=settings.DEFAULT_FROM_EMAIL,
                     recipient_list=[user.email],
                     fail_silently=False,
