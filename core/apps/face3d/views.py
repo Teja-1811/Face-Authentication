@@ -217,9 +217,9 @@ def face_login(request):
             return JsonResponse({"error": "Face not recognized. Try again."}, status=401)
         
         except Exception as e:
-            return JsonResponse({"error": str(e)}, status=400)
+            return JsonResponse({"error": str(e)}, status=500)
     
-    return JsonResponse({"error": "Invalid request."}, status=400)
+    return JsonResponse({"error": "Invalid request."}, status=500)
 
 def password_login(request):
     if request.method == "POST":

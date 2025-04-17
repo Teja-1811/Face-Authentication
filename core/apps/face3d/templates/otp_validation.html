@@ -9,7 +9,7 @@
 
     <form id="otpForm">
         {% csrf_token %}
-        <input type="hidden" name="email" value="{{ email }}">
+        <input type="hidden" name="email" id="emailField" value="{{ email|default:'' }}">
 
         <div class="form-group mb-3 text-center">
             <label class="form-label mb-3">Enter the 6-digit OTP sent to your email</label>

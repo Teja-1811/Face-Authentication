@@ -90,12 +90,12 @@
 
             const prevDetection = detections;
             await new Promise(resolve => setTimeout(resolve, 1000));
-            const newDetection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions());
+            const newDetection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks();
             
-            if (!newDetection) {
+            if (!newDetection || !newDetection.box || !prevDetection || !prevDetection.box) {
                 livenessMessage.textContent = "Please Wait, Your face is being verified!";
                 return;
-            }
+            }            
             
             const diffX = Math.abs(prevDetection.box.x - newDetection.box.x);
             const diffY = Math.abs(prevDetection.box.y - newDetection.box.y);
@@ -187,7 +187,7 @@
                     alert(`Welcome, ${data.username}! Redirecting to Dashboard.`);
                     window.location.href = '/dashboard/';
                 } else {
-                    alert(data.message);
+                    alert("Internal Server Error, Please Try Again!");
                 }
             })
             .catch(error => {
