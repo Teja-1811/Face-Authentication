@@ -28,10 +28,10 @@ SECRET_KEY = 'django-insecure-e_&7@+4=3m8!p%(@36%5y(qq6h@7$6!h8=&@w&ikez_d0o3(-e
 DEBUG = False
 
 ALLOWED_HOSTS = ['*',
-                 ""]
+                 "3266-2406-7400-35-6c94-4ec-5791-91e5-c2e8.ngrok-free.app"]
 
 CSRF_TRUSTED_ORIGINS = [
-    ""
+    "https://3266-2406-7400-35-6c94-4ec-5791-91e5-c2e8.ngrok-free.app"
  ]
 
 
@@ -149,8 +149,8 @@ EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = "smtp.gmail.com"
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = ""
-EMAIL_HOST_PASSWORD = ""
+EMAIL_HOST_USER = "bhanuteja18112001@gmail.com"
+EMAIL_HOST_PASSWORD = "utmckxvuiznqrklb"
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 # Default primary key field type
